@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "Подработка",
+    "slug": "mobile-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.podrabotka.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Приложению нужна геолокация для определения вашего местоположения."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#4F6EF7"
+      },
+      "package": "com.podrabotka.app",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": ""
+        }
+      }
+    },
+    "plugins": [
+      "expo-location",
+      "expo-secure-store"
+    ]
+  }
+}
