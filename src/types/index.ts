@@ -161,12 +161,13 @@ export interface MessageListOut {
 
 export interface TransactionOut {
   id: string;
-  order_id: string;
+  order_id: string | null;
   payer_id: string;
   receiver_id: string;
   amount: string;
   commission_amount: string;
   worker_amount: string;
+  type: string; // 'order_settlement' | 'deposit' | 'withdrawal'
   status: string;
   created_at: string;
 }
@@ -176,4 +177,26 @@ export interface TransactionListOut {
   total: number;
   limit: number;
   offset: number;
+}
+
+export interface TransactionSummary {
+  current_balance: string;
+  total_deposited: string;
+  total_withdrawn: string;
+  total_earned: string;
+  total_spent: string;
+}
+
+export interface DepositResult {
+  transaction_id: string;
+  amount: string;
+  new_balance: string;
+  card_last4: string;
+}
+
+export interface WithdrawResult {
+  transaction_id: string;
+  amount: string;
+  new_balance: string;
+  card_last4: string;
 }

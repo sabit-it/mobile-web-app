@@ -10,6 +10,7 @@ import WorkerChatScreen from '../screens/worker/WorkerChatScreen';
 import WorkerHistoryScreen from '../screens/worker/WorkerHistoryScreen';
 import WorkerReviewsScreen from '../screens/worker/WorkerReviewsScreen';
 import WorkerProfileScreen from '../screens/worker/WorkerProfileScreen';
+import WorkerFinanceScreen from '../screens/worker/WorkerFinanceScreen';
 
 export type WorkerHomeStackParamList = {
   WorkerHome: undefined;
@@ -26,6 +27,10 @@ export type WorkerReviewsStackParamList = {
   WorkerReviews: undefined;
 };
 
+export type WorkerFinanceStackParamList = {
+  WorkerFinance: undefined;
+};
+
 export type WorkerProfileStackParamList = {
   WorkerProfile: undefined;
 };
@@ -33,6 +38,7 @@ export type WorkerProfileStackParamList = {
 const HomeStack = createNativeStackNavigator<WorkerHomeStackParamList>();
 const HistoryStack = createNativeStackNavigator<WorkerHistoryStackParamList>();
 const ReviewsStack = createNativeStackNavigator<WorkerReviewsStackParamList>();
+const FinanceStack = createNativeStackNavigator<WorkerFinanceStackParamList>();
 const ProfileStack = createNativeStackNavigator<WorkerProfileStackParamList>();
 const Tab = createBottomTabNavigator();
 
@@ -60,6 +66,14 @@ function ReviewsNavigator() {
     <ReviewsStack.Navigator screenOptions={{ headerTintColor: Colors.primary }}>
       <ReviewsStack.Screen name="WorkerReviews" component={WorkerReviewsScreen} options={{ title: 'Отзывы' }} />
     </ReviewsStack.Navigator>
+  );
+}
+
+function FinanceNavigator() {
+  return (
+    <FinanceStack.Navigator screenOptions={{ headerTintColor: Colors.primary }}>
+      <FinanceStack.Screen name="WorkerFinance" component={WorkerFinanceScreen} options={{ title: 'Финансы' }} />
+    </FinanceStack.Navigator>
   );
 }
 
@@ -108,6 +122,16 @@ export default function WorkerTabs(): React.ReactElement {
           title: 'Отзывы',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="star-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="WorkerFinanceTab"
+        component={FinanceNavigator}
+        options={{
+          title: 'Финансы',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="wallet-outline" size={size} color={color} />
           ),
         }}
       />

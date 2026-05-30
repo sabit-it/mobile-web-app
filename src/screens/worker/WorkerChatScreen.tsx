@@ -41,7 +41,7 @@ export default function WorkerChatScreen(): React.ReactElement {
   const loadMessages = useCallback(async () => {
     try {
       const data = await getMessages(orderId, 50);
-      setMessages(data.items);
+      setMessages([...data.items].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
       setError('');
     } catch {
       setError('Нет соединения с сервером');

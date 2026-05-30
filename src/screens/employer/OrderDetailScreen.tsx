@@ -162,6 +162,18 @@ export default function OrderDetailScreen(): React.ReactElement {
           {order.description ? <Text style={styles.description}>{order.description}</Text> : null}
         </View>
 
+        {order.status === 'no_workers_available' && (
+          <View style={styles.noWorkersBanner}>
+            <Text style={styles.noWorkersIcon}>😔</Text>
+            <View style={styles.noWorkersText}>
+              <Text style={styles.noWorkersTitle}>Исполнители не найдены</Text>
+              <Text style={styles.noWorkersBody}>
+                К сожалению, ни один исполнитель не принял этот заказ. Вы можете повторить заявку — возможно, в следующий раз найдётся свободный мастер.
+              </Text>
+            </View>
+          </View>
+        )}
+
         <View style={globalStyles.card}>
           <Text style={styles.sectionLabel}>Детали заказа</Text>
           <InfoRow label="Адрес" value={order.address} />
@@ -341,6 +353,11 @@ const styles = StyleSheet.create({
   flex1: { flex: 1 },
   ml8: { marginLeft: 8 },
   mt8: { marginTop: 8 },
+  noWorkersBanner: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: Colors.danger + '12', borderLeftWidth: 4, borderLeftColor: Colors.danger, borderRadius: 10, marginHorizontal: 16, marginBottom: 8, padding: 14 },
+  noWorkersIcon: { fontSize: 28, marginRight: 12, marginTop: 2 },
+  noWorkersText: { flex: 1 },
+  noWorkersTitle: { fontSize: 15, fontWeight: '700', color: Colors.danger, marginBottom: 4 },
+  noWorkersBody: { fontSize: 13, color: Colors.textPrimary, lineHeight: 18 },
   reviewBtn: { borderWidth: 1, borderColor: Colors.warning, backgroundColor: Colors.warning + '15' },
   reviewBtnText: { color: Colors.warning, fontWeight: '600', fontSize: 16 },
   reviewItem: { borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 10, marginTop: 10 },

@@ -60,9 +60,18 @@ export default function WorkerProfileScreen(): React.ReactElement {
           setAbout(profile.about ?? '');
           setMaxDistance(profile.max_distance_km ? String(profile.max_distance_km) : '');
         } catch (e: unknown) {
-          const err = e as { response?: { status?: number } };
-          if (err.response?.status !== 404) {
-            setError('Не удалось загрузить профиль');
+          const err = e as { response?: { status?: number; data?: { detail?: string } } };
+          const status = err.response?.status;
+          if (status === 404) {
+            // Профиль ещё не создан — это нормально
+          } else if (status === 403) {
+            setError('Доступ только для исполнителей (роль worker)');
+          } else if (status === 401) {
+            setError('Сессия истекла, войдите снова');
+          } else if (!err.response) {
+            setError('Нет соединения с сервером');
+          } else {
+            setError(`Не удалось загрузить профиль (${status})`);
           }
           if (active.length > 0) {
             setProfessionId(String(active[0].id));

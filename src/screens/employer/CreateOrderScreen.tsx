@@ -139,9 +139,14 @@ export default function CreateOrderScreen(): React.ReactElement {
       if (!err.response) {
         showAlert('Ошибка', 'Нет соединения с сервером');
       } else if (err.response.status === 422) {
-        showAlert('Ошибка данных', JSON.stringify(err.response.data?.detail));
+        const detail = err.response.data?.detail;
+        const msg = Array.isArray(detail)
+          ? detail.map((d: { msg?: string; loc?: string[] }) => `${d.loc?.slice(1).join('.')} — ${d.msg}`).join('\n')
+          : String(detail);
+        showAlert('Ошибка данных', msg);
       } else if (err.response.status === 403) {
-        showAlert('Ошибка', 'Недостаточно прав');
+        const detail = (err.response.data as { detail?: string })?.detail;
+        showAlert('Нет доступа', detail || 'Недостаточно прав');
       } else {
         showAlert('Ошибка сервера', 'Попробуйте позже.');
       }
@@ -221,7 +226,7 @@ export default function CreateOrderScreen(): React.ReactElement {
               <Controller
                 control={control}
                 name="hours"
-                rules={{ required: 'Введите часы', min: { value: 1, message: 'Минимум 1' } }}
+                rules={{ required: 'Введите часы', min: { value: 1, message: 'Минимум 1' }, max: { value: 168, message: 'Максимум 168 ч (7 дней)' } }}
                 render={({ field: { onChange, value } }) => (
                   <TextInput
                     style={[globalStyles.input, errors.hours && globalStyles.inputError]}

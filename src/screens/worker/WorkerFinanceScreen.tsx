@@ -15,7 +15,7 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import { AxiosError } from 'axios';
 import { Colors, globalStyles } from '../../theme';
-import { getMyTransactions, getTransactionSummary, deposit, DepositRequest } from '../../api/transactions';
+import { getMyTransactions, getTransactionSummary, withdraw, WithdrawRequest } from '../../api/transactions';
 import { TransactionOut, TransactionSummary } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { getMe } from '../../api/auth';
@@ -23,8 +23,8 @@ import { showAlert } from '../../utils/alert';
 import ErrorMessage from '../../components/ErrorMessage';
 
 const LIMIT = 20;
-const TYPE_LABEL: Record<string, string> = { deposit: 'Пополнение', withdrawal: 'Вывод', order_settlement: 'Оплата заказа' };
-const TYPE_ICON: Record<string, string>  = { deposit: '⬆️', withdrawal: '⬇️', order_settlement: '🛒' };
+const TYPE_LABEL: Record<string, string> = { deposit: 'Пополнение', withdrawal: 'Вывод', order_settlement: 'Заработок за заказ' };
+const TYPE_ICON: Record<string, string>  = { deposit: '⬆️', withdrawal: '⬇️', order_settlement: '✅' };
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -36,15 +36,15 @@ function SummaryCard({ s }: { s: TransactionSummary }) {
       <Text style={styles.balLabel}>Текущий баланс</Text>
       <Text style={styles.balValue}>{parseFloat(s.current_balance).toLocaleString('ru-RU')} ₽</Text>
       <View style={styles.statsRow}>
-        <View style={styles.stat}><Text style={styles.statLbl}>Пополнено</Text><Text style={[styles.statVal,{color:'#a5f3c8'}]}>+{parseFloat(s.total_deposited).toLocaleString('ru-RU')} ₽</Text></View>
+        <View style={styles.stat}><Text style={styles.statLbl}>Заработано</Text><Text style={[styles.statVal,{color:'#a5f3c8'}]}>+{parseFloat(s.total_earned).toLocaleString('ru-RU')} ₽</Text></View>
         <View style={styles.div} />
-        <View style={styles.stat}><Text style={styles.statLbl}>Потрачено</Text><Text style={[styles.statVal,{color:'#fca5a5'}]}>−{parseFloat(s.total_spent).toLocaleString('ru-RU')} ₽</Text></View>
+        <View style={styles.stat}><Text style={styles.statLbl}>Выведено</Text><Text style={[styles.statVal,{color:'#fca5a5'}]}>−{parseFloat(s.total_withdrawn).toLocaleString('ru-RU')} ₽</Text></View>
       </View>
     </View>
   );
 }
 
-interface DepositForm {
+interface WithdrawForm {
   amount: string;
   card_number: string;
   card_holder: string;
@@ -53,7 +53,7 @@ interface DepositForm {
   cvv: string;
 }
 
-export default function TransactionsScreen(): React.ReactElement {
+export default function WorkerFinanceScreen(): React.ReactElement {
   const { dispatch } = useAuth();
   const [summary, setSummary] = useState<TransactionSummary | null>(null);
   const [items, setItems]     = useState<TransactionOut[]>([]);
@@ -62,10 +62,10 @@ export default function TransactionsScreen(): React.ReactElement {
   const [error, setError]     = useState('');
   const [total, setTotal]     = useState(0);
   const [off, setOff]         = useState(0);
-  const [showDep, setShowDep] = useState(false);
-  const [depositing, setDepositing] = useState(false);
+  const [showWith, setShowWith] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
 
-  const { control, handleSubmit, reset, formState: { errors } } = useForm<DepositForm>({
+  const { control, handleSubmit, reset, formState: { errors } } = useForm<WithdrawForm>({
     defaultValues: { amount: '', card_number: '', card_holder: '', expiry_month: '', expiry_year: '', cvv: '' },
   });
 
@@ -87,15 +87,15 @@ export default function TransactionsScreen(): React.ReactElement {
 
   useEffect(() => { loadData(true); }, []); // eslint-disable-line
 
-  async function onDeposit(data: DepositForm) {
+  async function onWithdraw(data: WithdrawForm) {
     const amount = parseFloat(data.amount.replace(',', '.'));
     if (isNaN(amount) || amount <= 0) { showAlert('Ошибка', 'Введите корректную сумму'); return; }
     if (!data.card_number.match(/^\d{16,19}$/)) { showAlert('Ошибка', 'Номер карты — 16–19 цифр'); return; }
     if (!data.cvv.match(/^\d{3,4}$/)) { showAlert('Ошибка', 'CVV — 3 или 4 цифры'); return; }
 
-    setDepositing(true);
+    setWithdrawing(true);
     try {
-      const req: DepositRequest = {
+      const req: WithdrawRequest = {
         amount,
         card_number: data.card_number,
         card_holder: data.card_holder.toUpperCase(),
@@ -103,21 +103,27 @@ export default function TransactionsScreen(): React.ReactElement {
         expiry_year: parseInt(data.expiry_year, 10),
         cvv: data.cvv,
       };
-      const res = await deposit(req);
-      setShowDep(false); reset();
+      const res = await withdraw(req);
+      setShowWith(false); reset();
       dispatch({ type: 'UPDATE_USER', payload: await getMe() });
-      showAlert('Баланс пополнен', `Зачислено: ${res.amount} ₽ с карты *${res.card_last4}\nНовый баланс: ${res.new_balance} ₽`);
+      showAlert('Вывод выполнен', `Выведено: ${res.amount} ₽ на карту *${res.card_last4}\nНовый баланс: ${res.new_balance} ₽`);
       loadData(true);
     } catch (e) {
       const err = e as AxiosError<{ detail: unknown }>;
       const detail = err.response?.data?.detail;
-      const msg = typeof detail === 'string'
-        ? detail
-        : Array.isArray(detail) && detail.length > 0
-          ? (detail[0] as { msg?: string }).msg ?? 'Ошибка валидации'
-          : !err.response ? 'Нет соединения с сервером' : 'Не удалось пополнить баланс';
-      showAlert('Ошибка пополнения', msg);
-    } finally { setDepositing(false); }
+      let msg: string;
+      if (typeof detail === 'string') {
+        msg = detail;
+      } else if (Array.isArray(detail) && detail.length > 0) {
+        // Pydantic 422 — берём msg первой ошибки
+        msg = (detail[0] as { msg?: string }).msg ?? 'Ошибка валидации данных';
+      } else if (!err.response) {
+        msg = 'Нет соединения с сервером';
+      } else {
+        msg = `Ошибка ${err.response.status}`;
+      }
+      showAlert('Ошибка вывода', msg);
+    } finally { setWithdrawing(false); }
   }
 
   if (loading) return <View style={[globalStyles.container, styles.center]}><ActivityIndicator size="large" color={Colors.primary} /></View>;
@@ -132,8 +138,8 @@ export default function TransactionsScreen(): React.ReactElement {
         contentContainerStyle={styles.list}
         ListHeaderComponent={<>
           {summary && <SummaryCard s={summary} />}
-          <TouchableOpacity style={styles.actionBtn} onPress={() => setShowDep(true)}>
-            <Text style={styles.actionTxt}>💳  Пополнить с карты</Text>
+          <TouchableOpacity style={styles.actionBtn} onPress={() => setShowWith(true)}>
+            <Text style={styles.actionTxt}>⬇️  Вывести средства</Text>
           </TouchableOpacity>
           <Text style={styles.histTitle}>История транзакций</Text>
         </>}
@@ -150,11 +156,14 @@ export default function TransactionsScreen(): React.ReactElement {
                 <Text style={styles.tIcon}>{TYPE_ICON[item.type] ?? '💳'}</Text>
                 <Text style={styles.tLabel}>{TYPE_LABEL[item.type] ?? item.type}</Text>
               </View>
-              <Text style={[styles.amt, item.type === 'deposit' ? styles.amtPos : styles.amtNeg]}>
-                {item.type === 'deposit' ? '+' : '−'}{item.amount} ₽
+              <Text style={[styles.amt,
+                item.type === 'order_settlement' || item.type === 'deposit' ? styles.amtPos : styles.amtNeg]}>
+                {item.type === 'withdrawal' ? '−' : '+'}{item.worker_amount || item.amount} ₽
               </Text>
             </View>
-            {parseFloat(item.commission_amount) > 0 && <Text style={styles.meta}>Комиссия: {item.commission_amount} ₽</Text>}
+            {parseFloat(item.commission_amount) > 0 && item.type === 'order_settlement' && (
+              <Text style={styles.meta}>Комиссия платформы: {item.commission_amount} ₽</Text>
+            )}
             <View style={globalStyles.spaceBetween}>
               <Text style={styles.date}>{formatDate(item.created_at)}</Text>
               <Text style={[styles.badge, item.status === 'completed' ? styles.badgeOk : styles.badgePend]}>
@@ -165,26 +174,24 @@ export default function TransactionsScreen(): React.ReactElement {
         )}
       />
 
-      {/* Deposit Modal */}
-      <Modal visible={showDep} animationType="slide" transparent>
+      {/* Withdraw Modal */}
+      <Modal visible={showWith} animationType="slide" transparent>
         <View style={styles.overlay}>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ width: '100%' }}>
             <View style={styles.sheet}>
               <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                <Text style={styles.sheetTitle}>Пополнить с карты</Text>
+                <Text style={styles.sheetTitle}>Вывод средств</Text>
 
                 <Text style={globalStyles.label}>Сумма (₽)</Text>
                 <Controller control={control} name="amount" rules={{ required: 'Обязательно' }}
                   render={({ field: { onChange, value } }) => (
                     <TextInput style={[globalStyles.input, styles.mt6, errors.amount && globalStyles.inputError]}
-                      value={value} onChangeText={onChange} keyboardType="numeric"
-                      placeholder="5000" placeholderTextColor={Colors.textMuted} autoFocus />
+                      value={value} onChangeText={onChange} keyboardType="numeric" placeholder="1000" placeholderTextColor={Colors.textMuted} />
                   )} />
                 {errors.amount && <Text style={globalStyles.errorText}>{errors.amount.message}</Text>}
 
                 <Text style={[globalStyles.label, styles.mt12]}>Номер карты</Text>
-                <Controller control={control} name="card_number"
-                  rules={{ required: 'Обязательно', pattern: { value: /^\d{16,19}$/, message: '16–19 цифр' } }}
+                <Controller control={control} name="card_number" rules={{ required: 'Обязательно', pattern: { value: /^\d{16,19}$/, message: '16–19 цифр' } }}
                   render={({ field: { onChange, value } }) => (
                     <TextInput style={[globalStyles.input, styles.mt6, errors.card_number && globalStyles.inputError]}
                       value={value} onChangeText={onChange} keyboardType="numeric" maxLength={19}
@@ -193,8 +200,7 @@ export default function TransactionsScreen(): React.ReactElement {
                 {errors.card_number && <Text style={globalStyles.errorText}>{errors.card_number.message}</Text>}
 
                 <Text style={[globalStyles.label, styles.mt12]}>Имя держателя (латиницей)</Text>
-                <Controller control={control} name="card_holder"
-                  rules={{ required: 'Обязательно', minLength: { value: 2, message: 'Минимум 2 символа' } }}
+                <Controller control={control} name="card_holder" rules={{ required: 'Обязательно', minLength: { value: 2, message: 'Минимум 2 символа' } }}
                   render={({ field: { onChange, value } }) => (
                     <TextInput style={[globalStyles.input, styles.mt6, errors.card_holder && globalStyles.inputError]}
                       value={value} onChangeText={v => onChange(v.toUpperCase())} autoCapitalize="characters"
@@ -204,13 +210,11 @@ export default function TransactionsScreen(): React.ReactElement {
 
                 <View style={[globalStyles.row, styles.mt12]}>
                   <View style={{ flex: 1 }}>
-                    <Text style={globalStyles.label}>Месяц</Text>
-                    <Controller control={control} name="expiry_month"
-                      rules={{ required: 'Обяз.', min: { value: 1, message: '1–12' }, max: { value: 12, message: '1–12' } }}
+                    <Text style={globalStyles.label}>Месяц (1–12)</Text>
+                    <Controller control={control} name="expiry_month" rules={{ required: 'Обяз.', min: { value: 1, message: '1–12' }, max: { value: 12, message: '1–12' } }}
                       render={({ field: { onChange, value } }) => (
                         <TextInput style={[globalStyles.input, styles.mt6, errors.expiry_month && globalStyles.inputError]}
-                          value={value} onChangeText={onChange} keyboardType="numeric" maxLength={2}
-                          placeholder="MM" placeholderTextColor={Colors.textMuted} />
+                          value={value} onChangeText={onChange} keyboardType="numeric" maxLength={2} placeholder="MM" placeholderTextColor={Colors.textMuted} />
                       )} />
                     {errors.expiry_month && <Text style={globalStyles.errorText}>{errors.expiry_month.message}</Text>}
                   </View>
@@ -219,15 +223,13 @@ export default function TransactionsScreen(): React.ReactElement {
                     <Controller control={control} name="expiry_year" rules={{ required: 'Обяз.' }}
                       render={({ field: { onChange, value } }) => (
                         <TextInput style={[globalStyles.input, styles.mt6, errors.expiry_year && globalStyles.inputError]}
-                          value={value} onChangeText={onChange} keyboardType="numeric" maxLength={4}
-                          placeholder="2028" placeholderTextColor={Colors.textMuted} />
+                          value={value} onChangeText={onChange} keyboardType="numeric" maxLength={4} placeholder="2028" placeholderTextColor={Colors.textMuted} />
                       )} />
                     {errors.expiry_year && <Text style={globalStyles.errorText}>{errors.expiry_year.message}</Text>}
                   </View>
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={globalStyles.label}>CVV</Text>
-                    <Controller control={control} name="cvv"
-                      rules={{ required: 'Обяз.', pattern: { value: /^\d{3,4}$/, message: '3–4 цифры' } }}
+                    <Controller control={control} name="cvv" rules={{ required: 'Обяз.', pattern: { value: /^\d{3,4}$/, message: '3–4 цифры' } }}
                       render={({ field: { onChange, value } }) => (
                         <TextInput style={[globalStyles.input, styles.mt6, errors.cvv && globalStyles.inputError]}
                           value={value} onChangeText={onChange} keyboardType="numeric" maxLength={4}
@@ -239,11 +241,11 @@ export default function TransactionsScreen(): React.ReactElement {
 
                 <View style={[globalStyles.row, { marginTop: 20 }]}>
                   <TouchableOpacity style={[globalStyles.button, globalStyles.buttonPrimary, { flex: 1 }]}
-                    onPress={handleSubmit(onDeposit)} disabled={depositing}>
-                    <Text style={globalStyles.buttonText}>{depositing ? 'Пополнение...' : 'Пополнить'}</Text>
+                    onPress={handleSubmit(onWithdraw)} disabled={withdrawing}>
+                    <Text style={globalStyles.buttonText}>{withdrawing ? 'Выводим...' : 'Вывести'}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[globalStyles.button, globalStyles.buttonSecondary, { flex: 1, marginLeft: 8 }]}
-                    onPress={() => { setShowDep(false); reset(); }}>
+                    onPress={() => { setShowWith(false); reset(); }}>
                     <Text style={globalStyles.buttonTextDark}>Отмена</Text>
                   </TouchableOpacity>
                 </View>
@@ -259,7 +261,7 @@ export default function TransactionsScreen(): React.ReactElement {
 const styles = StyleSheet.create({
   center: { justifyContent: 'center', alignItems: 'center' },
   list: { paddingBottom: 32 },
-  summaryCard: { margin: 16, marginBottom: 8, backgroundColor: Colors.primary, borderRadius: 16, padding: 20 },
+  summaryCard: { margin: 16, marginBottom: 8, backgroundColor: '#1a7c4f', borderRadius: 16, padding: 20 },
   balLabel: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginBottom: 4 },
   balValue: { fontSize: 36, fontWeight: '800', color: '#fff', marginBottom: 16 },
   statsRow: { flexDirection: 'row', alignItems: 'center' },
@@ -267,8 +269,8 @@ const styles = StyleSheet.create({
   statLbl: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
   statVal: { fontSize: 16, fontWeight: '700', marginTop: 2 },
   div: { width: 1, height: 32, backgroundColor: 'rgba(255,255,255,0.25)' },
-  actionBtn: { marginHorizontal: 16, marginBottom: 8, backgroundColor: Colors.primary + '15', borderWidth: 1.5, borderColor: Colors.primary, borderRadius: 12, padding: 14, alignItems: 'center' },
-  actionTxt: { fontSize: 16, fontWeight: '700', color: Colors.primary },
+  actionBtn: { marginHorizontal: 16, marginBottom: 8, backgroundColor: Colors.success + '15', borderWidth: 1.5, borderColor: Colors.success, borderRadius: 12, padding: 14, alignItems: 'center' },
+  actionTxt: { fontSize: 16, fontWeight: '700', color: Colors.success },
   histTitle: { fontSize: 12, fontWeight: '700', color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginHorizontal: 16, marginBottom: 4, marginTop: 8 },
   typeRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   tIcon: { fontSize: 18 },

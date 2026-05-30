@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   Alert,
   Modal,
@@ -17,7 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors, globalStyles } from '../../theme';
 import { getMyWorkerProfile, setLineStatus } from '../../api/workers';
-import { updateLocation } from '../../api/auth';
+import { updateLocation, updateLiveLocation } from '../../api/auth';
 import { getMyOrders } from '../../api/orders';
 import { getPendingOffers, respondToOffer } from '../../api/offers';
 import { WorkerProfileOut, OrderSummary, PendingOfferForWorker } from '../../types';
@@ -49,6 +50,7 @@ export default function WorkerHomeScreen(): React.ReactElement {
   const [respondingOffer, setRespondingOffer] = useState(false);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const locationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadData = useCallback(async () => {
     setError('');
@@ -73,20 +75,29 @@ export default function WorkerHomeScreen(): React.ReactElement {
     }
   }, []);
 
-  useEffect(() => {
-    loadData().finally(() => setLoading(false));
-  }, [loadData]);
+  // Re-run loadData every time the screen comes into focus
+  // (e.g. worker created a profile in ProfileTab and returned here)
+  useFocusEffect(
+    useCallback(() => {
+      loadData().finally(() => setLoading(false));
+    }, [loadData]),
+  );
 
   useEffect(() => {
     async function pollOffers() {
       try {
         const offers = await getPendingOffers();
         if (offers.length > 0 && !showOfferModal) {
+          // New offer arrived — show modal
           setPendingOffer(offers[0]);
           setShowOfferModal(true);
+        } else if (offers.length === 0 && showOfferModal) {
+          // Offer expired while modal was open — close it so worker doesn't try to accept a dead offer
+          setShowOfferModal(false);
+          setPendingOffer(null);
         }
-      } catch {
-        // silent
+      } catch (e) {
+        console.warn('pollOffers error:', e);
       }
     }
 
@@ -95,6 +106,42 @@ export default function WorkerHomeScreen(): React.ReactElement {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [showOfferModal]);
+
+  // Auto-update worker location every 5 s while online
+  useEffect(() => {
+    if (!isOnline) {
+      if (locationIntervalRef.current) {
+        clearInterval(locationIntervalRef.current);
+        locationIntervalRef.current = null;
+      }
+      return;
+    }
+
+    async function sendLocation() {
+      try {
+        const pos = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        const { latitude, longitude } = pos.coords;
+        await updateLiveLocation(latitude, longitude);
+        setWorkerLat(latitude);
+        setWorkerLng(longitude);
+      } catch {
+        // silent — GPS может быть недоступен
+      }
+    }
+
+    // Отправляем сразу и затем каждые 5 секунд
+    sendLocation();
+    locationIntervalRef.current = setInterval(sendLocation, 5000);
+
+    return () => {
+      if (locationIntervalRef.current) {
+        clearInterval(locationIntervalRef.current);
+        locationIntervalRef.current = null;
+      }
+    };
+  }, [isOnline]);
 
   async function handleToggleOnline(value: boolean) {
     setToggling(true);
@@ -176,10 +223,12 @@ export default function WorkerHomeScreen(): React.ReactElement {
 
         {!hasProfile ? (
           <View style={[globalStyles.card, styles.noprofileCard]}>
-            <Text style={styles.noprofileText}>Создайте профиль исполнителя, чтобы получать заказы</Text>
+            <Text style={styles.noprofileText}>
+              Заполните профиль исполнителя (выберите профессию), чтобы получать заказы
+            </Text>
             <TouchableOpacity
               style={[globalStyles.button, globalStyles.buttonPrimary, styles.mt12]}
-              onPress={() => navigation.navigate('WorkerHome')}
+              onPress={() => navigation.getParent()?.navigate('WorkerProfileTab')}
             >
               <Text style={globalStyles.buttonText}>Перейти в профиль</Text>
             </TouchableOpacity>
@@ -210,12 +259,14 @@ export default function WorkerHomeScreen(): React.ReactElement {
 
         {isOnline && workerLat && workerLng && (
           <View style={[globalStyles.card, styles.mapCard]}>
-            <Text style={styles.sectionLabel}>Моя позиция</Text>
+            <Text style={styles.sectionLabel}>{currentOrder ? 'Маршрут к заказу' : 'Моя позиция'}</Text>
             <SharedMap
               latitude={workerLat}
               longitude={workerLng}
-              markerLat={workerLat}
-              markerLng={workerLng}
+              markers={[
+                { lat: workerLat, lng: workerLng, type: 'self' },
+                ...(currentOrder ? [{ lat: parseFloat(currentOrder.lat), lng: parseFloat(currentOrder.lng), type: 'order' as const }] : []),
+              ]}
               style={styles.map}
             />
           </View>

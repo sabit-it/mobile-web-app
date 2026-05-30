@@ -70,3 +70,8 @@ export async function updateLocation(lat: number, lng: number): Promise<User> {
   const response = await apiClient.patch<User>('/auth/me/location', { lat, lng });
   return response.data;
 }
+
+/** Лёгкое потоковое обновление координат — 204, без тела ответа */
+export async function updateLiveLocation(lat: number, lng: number): Promise<void> {
+  await apiClient.put('/auth/me/location/live', { lat, lng });
+}
