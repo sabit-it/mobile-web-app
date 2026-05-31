@@ -40,6 +40,6 @@ jobs:
             docker rm mobile-app || true
             docker run -d \
               --name mobile-app \
-              -p 8080:80 \
+              -p 80:80 \
               --restart unless-stopped \
               ghcr.io/${{ github.repository }}:latest
