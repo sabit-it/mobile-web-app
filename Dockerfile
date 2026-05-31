@@ -1,7 +1,7 @@
 FROM node:18-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --legacy-peer-deps
+RUN npm ci --legacy-peer-deps --ignore-scripts
 COPY . .
 RUN npx expo export --platform web
 
