@@ -25,6 +25,7 @@ import StarRating from '../../components/StarRating';
 import Avatar from '../../components/Avatar';
 import ErrorMessage from '../../components/ErrorMessage';
 import LoadingOverlay from '../../components/LoadingOverlay';
+import { useAuth } from '../../context/AuthContext';
 import { EmployerOrdersStackParamList } from '../../navigation/EmployerTabs';
 
 type Nav = NativeStackNavigationProp<EmployerOrdersStackParamList, 'OrderDetail'>;
@@ -40,6 +41,7 @@ export default function OrderDetailScreen(): React.ReactElement {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const { orderId } = route.params;
+  const { user } = useAuth();
 
   const [orderView, setOrderView] = useState<OrderParticipantView | null>(null);
   const [reviews, setReviews] = useState<ReviewOut[]>([]);
@@ -151,7 +153,7 @@ export default function OrderDetailScreen(): React.ReactElement {
   const orderLat = parseFloat(order.lat);
   const orderLng = parseFloat(order.lng);
   const hasValidCoords = !isNaN(orderLat) && !isNaN(orderLng);
-  const alreadyReviewed = reviews.some((r) => r.order_id === orderId);
+  const alreadyReviewed = reviews.some((r) => r.author_id === user?.id);
 
   return (
     <>

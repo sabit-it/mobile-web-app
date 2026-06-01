@@ -24,6 +24,7 @@ import { getPendingOffers, respondToOffer } from '../../api/offers';
 import { WorkerProfileOut, OrderSummary, PendingOfferForWorker } from '../../types';
 import { AxiosError } from 'axios';
 import { showAlert } from '../../utils/alert';
+import { unlockAudio, playNotificationSound } from '../../utils/sound';
 import { useAuth } from '../../context/AuthContext';
 import Avatar from '../../components/Avatar';
 import ErrorMessage from '../../components/ErrorMessage';
@@ -89,6 +90,7 @@ export default function WorkerHomeScreen(): React.ReactElement {
         const offers = await getPendingOffers();
         if (offers.length > 0 && !showOfferModal) {
           // New offer arrived — show modal
+          playNotificationSound();
           setPendingOffer(offers[0]);
           setShowOfferModal(true);
         } else if (offers.length === 0 && showOfferModal) {
@@ -161,6 +163,7 @@ export default function WorkerHomeScreen(): React.ReactElement {
       }
       const updated = await setLineStatus(value);
       setIsOnline(updated.is_online);
+      if (value) unlockAudio();
     } catch {
       showAlert('Ошибка', 'Не удалось изменить статус');
     } finally {
