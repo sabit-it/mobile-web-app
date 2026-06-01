@@ -20,6 +20,9 @@ jobs:
           node-version: '18'
           cache: 'npm'
 
+      - name: Pin npm version
+        run: npm install -g npm@9.2.0
+
       - name: Stub bob and husky
         run: |
           sudo sh -c 'printf "#!/bin/sh\nexit 0\n" > /usr/local/bin/bob && chmod +x /usr/local/bin/bob'
