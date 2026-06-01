@@ -87,6 +87,8 @@ export default function LoginScreen(): React.ReactElement {
                 autoCorrect={false}
                 placeholder="you@example.com"
                 placeholderTextColor={Colors.textMuted}
+                nativeID="login-email"
+                autoComplete="email"
               />
             )}
           />
@@ -105,6 +107,8 @@ export default function LoginScreen(): React.ReactElement {
                 secureTextEntry
                 placeholder="••••••••"
                 placeholderTextColor={Colors.textMuted}
+                nativeID="login-password"
+                autoComplete="current-password"
               />
             )}
           />

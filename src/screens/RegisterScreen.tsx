@@ -114,6 +114,8 @@ export default function RegisterScreen(): React.ReactElement {
                 onChangeText={onChange}
                 placeholder="Иванов"
                 placeholderTextColor={Colors.textMuted}
+                nativeID="register-last-name"
+                autoComplete="family-name"
               />
             )}
           />
@@ -131,6 +133,8 @@ export default function RegisterScreen(): React.ReactElement {
                 onChangeText={onChange}
                 placeholder="Иван"
                 placeholderTextColor={Colors.textMuted}
+                nativeID="register-first-name"
+                autoComplete="given-name"
               />
             )}
           />
@@ -147,6 +151,7 @@ export default function RegisterScreen(): React.ReactElement {
                 onChangeText={onChange}
                 placeholder="Иванович (необязательно)"
                 placeholderTextColor={Colors.textMuted}
+                nativeID="register-patronymic"
               />
             )}
           />
@@ -168,6 +173,8 @@ export default function RegisterScreen(): React.ReactElement {
                 autoCapitalize="none"
                 placeholder="you@example.com"
                 placeholderTextColor={Colors.textMuted}
+                nativeID="register-email"
+                autoComplete="email"
               />
             )}
           />
@@ -186,6 +193,8 @@ export default function RegisterScreen(): React.ReactElement {
                 secureTextEntry
                 placeholder="Минимум 8 символов"
                 placeholderTextColor={Colors.textMuted}
+                nativeID="register-password"
+                autoComplete="new-password"
               />
             )}
           />
@@ -203,6 +212,8 @@ export default function RegisterScreen(): React.ReactElement {
                 keyboardType="phone-pad"
                 placeholder="+7 (999) 123-45-67"
                 placeholderTextColor={Colors.textMuted}
+                nativeID="register-phone"
+                autoComplete="tel"
               />
             )}
           />
