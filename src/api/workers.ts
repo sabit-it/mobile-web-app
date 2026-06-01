@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { WorkerCatalogOut, WorkerProfileOut } from '../types';
+import { WorkerCatalogItem, WorkerCatalogOut, WorkerProfileOut } from '../types';
 
 interface ListWorkersParams {
   profession_id?: number;
@@ -14,6 +14,11 @@ interface ListWorkersParams {
 
 export async function listWorkers(params?: ListWorkersParams): Promise<WorkerCatalogOut> {
   const response = await apiClient.get<WorkerCatalogOut>('/workers/', { params });
+  return response.data;
+}
+
+export async function getWorkerByUserId(userId: string): Promise<WorkerCatalogItem> {
+  const response = await apiClient.get<WorkerCatalogItem>(`/workers/${userId}`);
   return response.data;
 }
 

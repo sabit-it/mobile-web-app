@@ -10,7 +10,7 @@ import {
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { AxiosError } from 'axios';
 import { Colors, globalStyles } from '../../theme';
-import { listWorkers } from '../../api/workers';
+import { getWorkerByUserId } from '../../api/workers';
 import { getReceivedReviews } from '../../api/reviews';
 import { ReviewOut, WorkerCatalogItem } from '../../types';
 import Avatar from '../../components/Avatar';
@@ -37,12 +37,7 @@ export default function WorkerDetailScreen(): React.ReactElement {
     async function load() {
       setError('');
       try {
-        const catalog = await listWorkers({ limit: 200 });
-        const found = catalog.items.find((w) => w.user_id === workerId);
-        if (!found) {
-          setError('Мастер не найден');
-          return;
-        }
+        const found = await getWorkerByUserId(workerId);
         setWorker(found);
         try {
           const rv = await getReceivedReviews();
