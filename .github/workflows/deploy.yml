@@ -43,5 +43,7 @@ jobs:
             docker run -d \
               --name mobile-app \
               -p 80:80 \
+              -p 443:443 \
+              -v /etc/ssl/one-time-work:/etc/ssl/one-time-work:ro \
               --restart unless-stopped \
               ghcr.io/${{ github.repository }}:latest
