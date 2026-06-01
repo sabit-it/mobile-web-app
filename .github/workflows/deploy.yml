@@ -20,6 +20,11 @@ jobs:
           node-version: '18'
           cache: 'npm'
 
+      - name: Stub bob and husky
+        run: |
+          sudo sh -c 'printf "#!/bin/sh\nexit 0\n" > /usr/local/bin/bob && chmod +x /usr/local/bin/bob'
+          sudo sh -c 'printf "#!/bin/sh\nexit 0\n" > /usr/local/bin/husky && chmod +x /usr/local/bin/husky'
+
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
