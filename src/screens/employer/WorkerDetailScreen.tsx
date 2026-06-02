@@ -11,7 +11,7 @@ import { useRoute, RouteProp } from '@react-navigation/native';
 import { AxiosError } from 'axios';
 import { Colors, globalStyles } from '../../theme';
 import { getWorkerByUserId } from '../../api/workers';
-import { getReceivedReviews } from '../../api/reviews';
+import { getReviewsForUser } from '../../api/reviews';
 import { ReviewOut, WorkerCatalogItem } from '../../types';
 import Avatar from '../../components/Avatar';
 import StarRating from '../../components/StarRating';
@@ -40,8 +40,8 @@ export default function WorkerDetailScreen(): React.ReactElement {
         const found = await getWorkerByUserId(workerId);
         setWorker(found);
         try {
-          const rv = await getReceivedReviews();
-          setReviews(rv.filter((r) => r.recipient_id === workerId));
+          const rv = await getReviewsForUser(workerId);
+          setReviews(rv);
         } catch {
           // reviews not critical
         }

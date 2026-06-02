@@ -24,3 +24,8 @@ export async function getOrderReviews(orderId: string): Promise<ReviewOut[]> {
   const response = await apiClient.get<ReviewOut[]>(`/reviews/by-order/${orderId}`);
   return response.data;
 }
+
+export async function getReviewsForUser(userId: string): Promise<ReviewOut[]> {
+  const response = await apiClient.get<ReviewOut[]>(`/reviews/for-user/${userId}`);
+  return response.data;
+}
