@@ -4,6 +4,7 @@ import SplashScreen from '../screens/SplashScreen';
 import AuthStack from './AuthStack';
 import EmployerTabs from './EmployerTabs';
 import WorkerTabs from './WorkerTabs';
+import AdminTabs from './AdminTabs';
 
 export default function AppNavigator(): React.ReactElement {
   const { isLoading, isAuthenticated, user } = useAuth();
@@ -14,6 +15,10 @@ export default function AppNavigator(): React.ReactElement {
 
   if (!isAuthenticated) {
     return <AuthStack />;
+  }
+
+  if (user?.is_admin) {
+    return <AdminTabs />;
   }
 
   if (user?.role === 'employer') {

@@ -20,6 +20,7 @@ export interface User {
   lng: string | null;
   balance: string;
   is_active: boolean;
+  is_admin: boolean;
 }
 
 export interface TokenResponse {
