@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  Animated,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -37,6 +38,16 @@ export default function RegisterScreen(): React.ReactElement {
   const { dispatch } = useAuth();
   const [role, setRole] = useState<'employer' | 'worker'>('employer');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const slideAnim = useRef(new Animated.Value(40)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
+    ]).start();
+  }, []);
 
   const {
     control,
@@ -75,12 +86,24 @@ export default function RegisterScreen(): React.ReactElement {
 
   return (
     <KeyboardAvoidingView
-      style={globalStyles.container}
+      style={styles.root}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>Регистрация</Text>
+      <View style={styles.hero}>
+        <View style={styles.heroCircle1} />
+        <View style={styles.heroCircle2} />
+        <Text style={styles.heroEmoji}>✨</Text>
+        <Text style={styles.heroTitle}>Регистрация</Text>
+        <Text style={styles.heroSub}>Создайте аккаунт бесплатно</Text>
+      </View>
 
+      <Animated.ScrollView
+        style={[styles.card, { opacity: fadeAnim }]}
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Animated.View style={{ transform: [{ translateY: slideAnim }] }}>
         <View style={styles.form}>
           <Text style={globalStyles.label}>Роль</Text>
           <View style={styles.segmented}>
@@ -219,79 +242,96 @@ export default function RegisterScreen(): React.ReactElement {
           />
 
           <TouchableOpacity
-            style={[globalStyles.button, globalStyles.buttonPrimary, styles.submitBtn]}
+            style={[styles.btn, isSubmitting && styles.btnDisabled]}
             onPress={handleSubmit(onSubmit)}
             disabled={isSubmitting}
+            activeOpacity={0.85}
           >
-            <Text style={globalStyles.buttonText}>
+            <Text style={styles.btnText}>
               {isSubmitting ? 'Регистрация...' : 'Зарегистрироваться'}
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Login')}
-            style={styles.link}
-          >
-            <Text style={styles.linkText}>Уже есть аккаунт? Войти</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.link}>
+            <Text style={styles.linkMuted}>Уже есть аккаунт? </Text>
+            <Text style={styles.linkAccent}>Войти</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+        </Animated.View>
+      </Animated.ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: {
-    flexGrow: 1,
-    padding: 24,
-    paddingTop: 48,
+  root: { flex: 1, backgroundColor: Colors.primary },
+  hero: {
+    paddingTop: 44,
+    paddingBottom: 24,
+    alignItems: 'center',
+    overflow: 'hidden',
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: Colors.primary,
-    textAlign: 'center',
-    marginBottom: 24,
+  heroCircle1: {
+    position: 'absolute',
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    top: -60,
+    right: -40,
   },
-  form: {
-    gap: 4,
+  heroCircle2: {
+    position: 'absolute',
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    bottom: -20,
+    left: -20,
   },
-  fieldGap: {
-    marginTop: 16,
+  heroEmoji: { fontSize: 40, marginBottom: 8 },
+  heroTitle: { fontSize: 28, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
+  heroSub: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 4, fontWeight: '500' },
+  card: {
+    flex: 1,
+    backgroundColor: Colors.bg,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
   },
+  scroll: { padding: 24, paddingBottom: 40 },
+  form: { gap: 4 },
+  fieldGap: { marginTop: 14 },
   segmented: {
     flexDirection: 'row',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: Colors.primary,
-    borderRadius: 10,
+    borderRadius: 12,
     overflow: 'hidden',
   },
   segment: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 11,
     alignItems: 'center',
     backgroundColor: Colors.surface,
   },
-  segmentActive: {
+  segmentActive: { backgroundColor: Colors.primary },
+  segmentText: { fontSize: 15, fontWeight: '600', color: Colors.primary },
+  segmentTextActive: { color: '#fff' },
+  btn: {
+    marginTop: 24,
     backgroundColor: Colors.primary,
-  },
-  segmentText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: Colors.primary,
-  },
-  segmentTextActive: {
-    color: '#fff',
-  },
-  submitBtn: {
-    marginTop: 28,
-  },
-  link: {
-    marginTop: 16,
+    borderRadius: 14,
+    paddingVertical: 15,
     alignItems: 'center',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  linkText: {
-    color: Colors.primary,
-    fontSize: 14,
-  },
+  btnDisabled: { opacity: 0.7 },
+  btnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  link: { marginTop: 16, flexDirection: 'row', justifyContent: 'center' },
+  linkMuted: { color: Colors.textMuted, fontSize: 14 },
+  linkAccent: { color: Colors.primary, fontSize: 14, fontWeight: '600' },
 });
